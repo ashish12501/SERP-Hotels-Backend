@@ -2,14 +2,17 @@
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors"; // Import cors middleware
+import dotenv from "dotenv"; // Import dotenv
+
+dotenv.config(); // Load environment variables from .env file
 
 const app = express();
 app.use(cors()); // Use cors middleware to enable CORS
 
 // Access the API key from the .env file
-const apiKey = process.env.SERPAPI_KEY;
-
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
 // Define a route for fetching hotels
+
 app.get("/hotels", async (req, res) => {
   try {
     // Extract query parameters from the request
@@ -28,6 +31,7 @@ app.get("/hotels", async (req, res) => {
       check_in_date,
       check_out_date
     );
+
     res.json(hotels);
   } catch (error) {
     console.error("Error fetching hotels:", error);
@@ -36,17 +40,20 @@ app.get("/hotels", async (req, res) => {
 });
 
 // Function to fetch hotels from SerpAPI
-async function fetchHotels(q, currency, check_in_date, check_out_date) {
+async function fetchHotels(q, currency, checkInDate = "", checkOutDate = "") {
   try {
-    // Build the URL for the API request
-    let url = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(
-      q
-    )}&currency=${currency}&api_key=${apiKey}&hl=en`;
+    // Start building the base URL with the required parameters
+    let url = `https://serpapi.com/search?engine=google_hotels&q=${q}&api_key=${SERPAPI_KEY}`;
 
-    // Add optional parameters to the URL if they are provided
-    if (check_in_date) url += `&check_in_date=${check_in_date}`;
-    if (check_out_date) url += `&check_out_date=${check_out_date}`;
+    // Append optional check-in and check-out dates if provided
+    if (checkInDate) {
+      url += `&check_in_date=${checkInDate}`;
+    }
+    if (checkOutDate) {
+      url += `&check_out_date=${checkOutDate}`;
+    }
 
+    console.log("Here is our URL ", url);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -54,8 +61,7 @@ async function fetchHotels(q, currency, check_in_date, check_out_date) {
     }
 
     const data = await response.json();
-    console.log(data);
-    return data.hotels_results || []; // Return hotel results if available
+    return data; // Return hotel results if available
   } catch (error) {
     console.error("Error fetching hotels:", error);
     throw error;
